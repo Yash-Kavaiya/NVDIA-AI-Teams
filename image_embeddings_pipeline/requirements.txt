@@ -1,0 +1,6 @@
+python-dotenv
+pandas 
+requests 
+pillow 
+qdrant-client
+aiohttp
