@@ -55,58 +55,105 @@ class DoclingExtractor(IDocumentExtractor):
             if hasattr(doc_obj, 'export_to_markdown'):
                 try:
                     full_text = doc_obj.export_to_markdown()
-                except Exception:
+                except Exception as e:
+                    logger.warning(f"Failed to export to markdown: {e}")
                     full_text = str(doc_obj)
             else:
                 full_text = str(doc_obj)
 
-            # Split by pages if available (pages may be objects or dicts)
-            pages = getattr(doc_obj, 'pages', None)
-            if pages:
-                for page_num, page in enumerate(pages, start=1):
-                    if hasattr(page, 'export_to_markdown'):
-                        try:
-                            page_text = page.export_to_markdown()
-                        except Exception:
-                            page_text = str(page)
-                    elif isinstance(page, dict):
-                        # Try common keys
-                        page_text = page.get('text') or page.get('content') or str(page)
-                    else:
-                        page_text = str(page)
+            # Check if we got valid text
+            if not full_text or len(full_text.strip()) < 10:
+                logger.warning(f"No meaningful text extracted from {path.name}")
+                return []
 
-                    if page_text and page_text.strip():
-                        doc = Document(
-                            content=page_text,
-                            metadata={
-                                "filename": path.name,
-                                "file_path": str(path),
-                                "extraction_method": "docling",
-                                "has_tables": self._has_tables(page_text)
-                            },
-                            source=str(path),
-                            page_number=page_num
-                        )
-                        documents.append(doc)
-            else:
-                # Fallback: single document
-                doc = Document(
-                    content=full_text,
-                    metadata={
-                        "filename": path.name,
-                        "file_path": str(path),
-                        "extraction_method": "docling"
-                    },
-                    source=str(path),
-                    page_number=None
-                )
-                documents.append(doc)
+            # Try to extract pages if available
+            try:
+                # Docling's pages structure varies by version
+                # Try different ways to access pages
+                pages_dict = None
+                if hasattr(doc_obj, 'pages'):
+                    pages_attr = doc_obj.pages
+                    # Pages might be a dict {page_num: page_obj} or a list
+                    if isinstance(pages_attr, dict):
+                        pages_dict = pages_attr
+                    elif hasattr(pages_attr, 'items'):
+                        pages_dict = dict(pages_attr.items())
+                
+                if pages_dict:
+                    # Extract text from each page
+                    for page_num, page_obj in sorted(pages_dict.items()):
+                        try:
+                            # Try to get text from page object
+                            if hasattr(page_obj, 'export_to_markdown'):
+                                page_text = page_obj.export_to_markdown()
+                            elif hasattr(page_obj, 'text'):
+                                page_text = page_obj.text
+                            elif isinstance(page_obj, dict):
+                                page_text = page_obj.get('text') or page_obj.get('content') or str(page_obj)
+                            else:
+                                # Skip if we can't get text
+                                continue
+                            
+                            if page_text and page_text.strip():
+                                doc = Document(
+                                    content=page_text.strip(),
+                                    metadata={
+                                        "filename": path.name,
+                                        "file_path": str(path),
+                                        "extraction_method": "docling",
+                                        "has_tables": self._has_tables(page_text)
+                                    },
+                                    source=str(path),
+                                    page_number=int(page_num) if isinstance(page_num, (int, str)) else None
+                                )
+                                documents.append(doc)
+                        except Exception as e:
+                            logger.warning(f"Failed to extract page {page_num}: {e}")
+                            continue
+                
+                # If we didn't get pages, use the full text
+                if not documents and full_text.strip():
+                    doc = Document(
+                        content=full_text.strip(),
+                        metadata={
+                            "filename": path.name,
+                            "file_path": str(path),
+                            "extraction_method": "docling",
+                            "has_tables": self._has_tables(full_text)
+                        },
+                        source=str(path),
+                        page_number=None
+                    )
+                    documents.append(doc)
+                    
+            except Exception as e:
+                logger.warning(f"Failed to extract pages, using full text: {e}")
+                # Fallback: use full text as single document
+                if full_text.strip():
+                    doc = Document(
+                        content=full_text.strip(),
+                        metadata={
+                            "filename": path.name,
+                            "file_path": str(path),
+                            "extraction_method": "docling",
+                            "has_tables": self._has_tables(full_text)
+                        },
+                        source=str(path),
+                        page_number=None
+                    )
+                    documents.append(doc)
             
-            logger.info(f"✓ Extracted {len(documents)} page(s) from {path.name}")
+            if documents:
+                logger.info(f"✓ Extracted {len(documents)} page(s) from {path.name}")
+            else:
+                logger.warning(f"No documents extracted from {path.name}")
+            
             return documents
             
         except Exception as e:
             logger.error(f"✗ Error extracting {file_path}: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return []
     
     def _has_tables(self, text: str) -> bool:
