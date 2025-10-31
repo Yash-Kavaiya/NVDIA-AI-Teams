@@ -87,8 +87,17 @@ class QdrantVectorDB(IVectorDatabase):
                     continue
                 
                 # Validate embedding
-                if not isinstance(embedding, list) or len(embedding) != self.config.embedding_dim:
-                    logger.error(f"Invalid embedding at index {i}: expected list of {self.config.embedding_dim} floats, got {type(embedding)}")
+                if not isinstance(embedding, list):
+                    logger.error(f"Invalid embedding at index {i}: expected list, got {type(embedding)}")
+                    continue
+                
+                if len(embedding) != self.config.embedding_dim:
+                    logger.error(f"Invalid embedding at index {i}: expected {self.config.embedding_dim} dimensions, got {len(embedding)}")
+                    continue
+                
+                # Check if all elements are numeric
+                if not all(isinstance(x, (int, float)) for x in embedding):
+                    logger.error(f"Invalid embedding at index {i}: contains non-numeric values. First few elements: {embedding[:5]}")
                     continue
                 
                 # Create a unique UUID-based ID for each chunk
