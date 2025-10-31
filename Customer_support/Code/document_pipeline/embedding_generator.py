@@ -118,13 +118,13 @@ class NvidiaEmbeddingGenerator(IEmbeddingGenerator):
         
         return embeddings
     
-    def validate_text_length(self, text: str, max_tokens: int = 2048) -> bool:
+    def validate_text_length(self, text: str, max_tokens: int = 8192) -> bool:
         """
         Validate text doesn't exceed token limit.
         
         Args:
             text: Text to validate
-            max_tokens: Maximum allowed tokens
+            max_tokens: Maximum allowed tokens (default 8192 for llama-3.2-nemoretriever-300m-embed-v2)
             
         Returns:
             True if text is within limit

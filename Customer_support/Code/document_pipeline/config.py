@@ -55,7 +55,7 @@ class DocumentProcessingConfig:
     """Document processing configuration."""
     chunk_size: int = 512
     chunk_overlap: int = 50
-    max_tokens: int = 2048  # NVIDIA embedding model limit
+    max_tokens: int = 8192  # NVIDIA llama-3.2-nemoretriever-300m-embed-v2 token limit
     batch_size: int = 10
     
     def validate(self) -> None:
