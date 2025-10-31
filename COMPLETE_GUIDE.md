@@ -160,7 +160,7 @@ Query → Embedding → Vector Search (fast, 50 results)
 
 ### Embeddings
 - NVIDIA `llama-3.2-nemoretriever-300m-embed-v2`
-- 300-dimensional vectors
+- 2048-dimensional vectors (300M refers to model parameters)
 - Query vs passage modes
 - Batch processing support
 

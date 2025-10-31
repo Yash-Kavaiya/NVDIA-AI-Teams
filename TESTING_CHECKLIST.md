@@ -109,7 +109,7 @@ asyncio.run(test())
 
 Expected:
 ```
-✓ Generated embedding with 300 dimensions
+✓ Generated embedding with 2048 dimensions
 ✓ Embedding type: <class 'float'>
 ```
 
@@ -479,7 +479,7 @@ Collection Statistics:
 ✅ **All Components Working:**
 - [ ] PDF extraction successful
 - [ ] Chunking produces overlapping chunks
-- [ ] Embeddings generated (300-dim)
+- [ ] Embeddings generated (2048-dim)
 - [ ] Qdrant stores and retrieves
 - [ ] Reranker improves results
 

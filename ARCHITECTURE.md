@@ -67,7 +67,7 @@
                           │ EmbeddingGenerator    │
                           │ NVIDIA API            │
                           │ • input_type=passage  │
-                          │ • 300-dim vectors     │
+                          │ • 2048-dim vectors    │
                           └──────────┬────────────┘
                                      ↓
                               Embeddings (vectors)
@@ -92,7 +92,7 @@
   ┌─────────────────────┐
   │ EmbeddingGenerator  │  Stage 1: Query Understanding
   │ • input_type=query  │  Convert text to vector
-  │ • 300-dim vector    │
+  │ • 2048-dim vector   │
   └──────────┬──────────┘
              ↓
        Query Vector
@@ -215,9 +215,9 @@ Step 3: Chunking
 
 Step 4: Embedding Generation
 ├─ Generate embedding for each chunk
-├─ Model: llama-3.2-nemoretriever-300m-embed-v2
+├─ Model: llama-3.2-nemoretriever-300m-embed-v2 (300M params)
 ├─ Input type: "passage"
-├─ Result: 342 × 300-dim vectors
+├─ Result: 342 × 2048-dim vectors
 └─ Time: ~45 seconds
 
 Step 5: Storage (Qdrant)

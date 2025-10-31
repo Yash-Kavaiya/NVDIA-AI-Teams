@@ -24,7 +24,7 @@ class QdrantVectorDB(IVectorDatabase):
     Manages Qdrant vector database operations.
     
     Qdrant is optimized for:
-    - High-dimensional vectors (our 300-dim embeddings)
+    - High-dimensional vectors (our 2048-dim embeddings)
     - Cosine similarity search
     - Metadata filtering
     - Horizontal scaling

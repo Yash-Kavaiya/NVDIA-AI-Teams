@@ -91,7 +91,7 @@ NVDIA-AI-Teams/
 
 ### Document Processing (NEW!)
 - **Docling PDF Extraction** - Structured text extraction with table detection
-- **NVIDIA Embeddings** - `llama-3.2-nemoretriever-300m-embed-v2` (300-dim vectors)
+- **NVIDIA Embeddings** - `llama-3.2-nemoretriever-300m-embed-v2` (2048-dim vectors)
 - **NVIDIA Reranking** - `llama-3.2-nv-rerankqa-1b-v2` for precision
 - **SOLID Architecture** - Clean, maintainable, testable code
 - **Two-Stage Retrieval** - Fast vector search + precise reranking
@@ -126,9 +126,10 @@ NVDIA-AI-Teams/
 
 ### Embeddings
 - **Model**: `nvidia/llama-3.2-nemoretriever-300m-embed-v2`
-- **Dimensions**: 300
-- **Token Limit**: 2048
+- **Dimensions**: 2048
+- **Token Limit**: 8192
 - **Input Types**: `query` (search) / `passage` (documents)
+- **Note**: "300m" refers to model parameters (300M), not embedding dimensions
 
 ### Reranker
 - **Model**: `nvidia/llama-3.2-nv-rerankqa-1b-v2`

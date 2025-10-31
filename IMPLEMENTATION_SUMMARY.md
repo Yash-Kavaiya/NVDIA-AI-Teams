@@ -139,9 +139,9 @@ Built with **SOLID principles** and **dependency injection** for maintainable, t
 
 ### 3. NVIDIA AI Integration
 - ✅ **Embeddings**: `llama-3.2-nemoretriever-300m-embed-v2`
-  - 300-dimensional vectors
+  - 2048-dimensional vectors (300M = model parameters)
   - Query vs passage input types
-  - 2048 token limit
+  - 8192 token limit
   
 - ✅ **Reranker**: `llama-3.2-nv-rerankqa-1b-v2`
   - Cross-attention scoring

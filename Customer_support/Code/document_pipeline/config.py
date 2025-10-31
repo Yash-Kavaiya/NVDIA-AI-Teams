@@ -41,7 +41,7 @@ class QdrantConfig:
     """Qdrant vector database configuration."""
     url: str
     collection_name: str
-    embedding_dim: int = 300  # llama-3.2-nemoretriever-300m-embed-v2
+    embedding_dim: int = 2048  # llama-3.2-nemoretriever-300m-embed-v2 (300m = params, not dims)
     
     def validate(self) -> None:
         """Validate Qdrant configuration."""
@@ -55,7 +55,7 @@ class DocumentProcessingConfig:
     """Document processing configuration."""
     chunk_size: int = 512
     chunk_overlap: int = 50
-    max_tokens: int = 2048  # NVIDIA embedding model limit
+    max_tokens: int = 8192  # NVIDIA llama-3.2-nemoretriever-300m-embed-v2 token limit
     batch_size: int = 10
     
     def validate(self) -> None:
@@ -101,12 +101,13 @@ class Config:
         qdrant = QdrantConfig(
             url=os.getenv("QDRANT_URL", "http://localhost:6333"),
             collection_name=os.getenv("COLLECTION_NAME", "customer_support_docs"),
-            embedding_dim=int(os.getenv("EMBEDDING_DIM", "300"))
+            embedding_dim=int(os.getenv("EMBEDDING_DIM", "2048"))
         )
         
         processing = DocumentProcessingConfig(
             chunk_size=int(os.getenv("CHUNK_SIZE", "512")),
             chunk_overlap=int(os.getenv("CHUNK_OVERLAP", "50")),
+            max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
             batch_size=int(os.getenv("BATCH_SIZE", "10"))
         )
         

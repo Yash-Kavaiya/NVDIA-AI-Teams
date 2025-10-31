@@ -38,7 +38,7 @@ class ImageEmbeddingPipeline:
 - NVIDIA API key format: `nvapi-XXXXX` (integrate.api.nvidia.com)
 
 ### NVIDIA API Integration
-**Embedding Model**: `nvidia/llama-3.2-nemoretriever-300m-embed-v2` (300-dim vectors, 2048 token limit)
+**Embedding Model**: `nvidia/llama-3.2-nemoretriever-300m-embed-v2` (2048-dim vectors, 8192 token limit, 300M params)
 ```python
 # Text/Query embeddings
 extra_body={"input_type": "query", "truncate": "NONE"}

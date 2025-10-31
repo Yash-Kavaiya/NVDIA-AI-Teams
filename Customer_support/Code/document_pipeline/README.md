@@ -91,8 +91,8 @@ python main.py interactive
 ## NVIDIA Models Used
 
 ### Embeddings: `nvidia/llama-3.2-nemoretriever-300m-embed-v2`
-- 300-dimensional vectors
-- 2048 token limit
+- 2048-dimensional vectors (300M refers to model parameters, not embedding dims)
+- 8192 token limit
 - Supports both query and passage modes
 
 ### Reranker: `nvidia/llama-3.2-nv-rerankqa-1b-v2`
