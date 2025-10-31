@@ -54,7 +54,8 @@ class Config:
         """Create configuration from environment variables."""
         nvidia = NvidiaConfig(
             api_key=os.getenv("NVIDIA_API_KEY", ""),
-            embedding_url=os.getenv("NVIDIA_EMBEDDING_URL", "")
+            # Accept either NVIDIA_EMBEDDING_URL or NVIDIA_BASE_URL (alias used in other pipelines/docs)
+            embedding_url=os.getenv("NVIDIA_EMBEDDING_URL", os.getenv("NVIDIA_BASE_URL", ""))
         )
         
         qdrant = QdrantConfig(
