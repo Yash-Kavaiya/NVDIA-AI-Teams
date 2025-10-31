@@ -5,6 +5,7 @@ Implements Single Responsibility Principle - only handles vector database operat
 import logging
 from typing import List
 from datetime import datetime
+import uuid
 from qdrant_client import QdrantClient
 from qdrant_client.models import (
     PointStruct, 
@@ -85,16 +86,23 @@ class QdrantVectorDB(IVectorDatabase):
                     logger.warning(f"Skipping chunk {i} - no embedding")
                     continue
                 
-                # Create unique ID based on source and chunk_id
-                point_id = hash(f"{chunk.source}_{chunk.chunk_id}") & 0x7FFFFFFFFFFFFFFF
+                # Validate embedding
+                if not isinstance(embedding, list) or len(embedding) != self.config.embedding_dim:
+                    logger.error(f"Invalid embedding at index {i}: expected list of {self.config.embedding_dim} floats, got {type(embedding)}")
+                    continue
                 
-                # Prepare payload
+                # Create a unique UUID-based ID for each chunk
+                # This avoids collisions and is compatible with Qdrant
+                unique_string = f"{chunk.source}_{chunk.chunk_id}_{i}"
+                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, unique_string))
+                
+                # Prepare payload - ensure all values are JSON serializable
                 payload = {
-                    "content": chunk.content,
-                    "source": chunk.source,
-                    "chunk_id": chunk.chunk_id,
-                    "page_number": chunk.page_number,
-                    "metadata": chunk.metadata,
+                    "content": str(chunk.content)[:10000],  # Limit content length
+                    "source": str(chunk.source),
+                    "chunk_id": int(chunk.chunk_id),
+                    "page_number": int(chunk.page_number) if chunk.page_number is not None else None,
+                    "metadata": self._sanitize_metadata(chunk.metadata),
                     "processed_at": datetime.now().isoformat()
                 }
                 
@@ -109,18 +117,47 @@ class QdrantVectorDB(IVectorDatabase):
                 logger.warning("No valid points to upsert")
                 return False
             
-            # Upsert to Qdrant
-            self.client.upsert(
-                collection_name=self.config.collection_name,
-                points=points
-            )
+            # Upsert to Qdrant in batches to avoid payload size limits
+            batch_size = 100
+            for i in range(0, len(points), batch_size):
+                batch = points[i:i + batch_size]
+                self.client.upsert(
+                    collection_name=self.config.collection_name,
+                    points=batch
+                )
+                logger.info(f"✓ Upserted batch {i//batch_size + 1}: {len(batch)} points")
             
-            logger.info(f"✓ Upserted {len(points)} points to Qdrant")
+            logger.info(f"✓ Successfully upserted {len(points)} total points to Qdrant")
             return True
             
         except Exception as e:
             logger.error(f"✗ Error upserting documents: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
             return False
+    
+    def _sanitize_metadata(self, metadata: dict) -> dict:
+        """
+        Sanitize metadata to ensure JSON serialization.
+        
+        Args:
+            metadata: Original metadata dictionary
+            
+        Returns:
+            Sanitized metadata dictionary
+        """
+        sanitized = {}
+        for key, value in metadata.items():
+            # Convert to JSON-serializable types
+            if isinstance(value, (str, int, float, bool)):
+                sanitized[key] = value
+            elif isinstance(value, (list, tuple)):
+                sanitized[key] = [str(v) for v in value]
+            elif isinstance(value, dict):
+                sanitized[key] = self._sanitize_metadata(value)
+            else:
+                sanitized[key] = str(value)
+        return sanitized
     
     async def search(
         self, 
