@@ -67,7 +67,11 @@ class NvidiaEmbeddingGenerator(IEmbeddingGenerator):
             )
             
             if response.data and len(response.data) > 0:
-                return response.data[0].embedding
+                embedding = response.data[0].embedding
+                # Log embedding structure for debugging
+                if embedding:
+                    logger.debug(f"Embedding type: {type(embedding)}, length: {len(embedding) if isinstance(embedding, list) else 'N/A'}")
+                return embedding
             
             logger.warning("No embedding in API response")
             return None

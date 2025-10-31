@@ -202,6 +202,13 @@ class DocumentProcessor(IDocumentProcessor):
             valid_chunks = [pair[0] for pair in valid_pairs]
             valid_embeddings = [pair[1] for pair in valid_pairs]
             
+            # Debug: Check first embedding structure
+            if valid_embeddings:
+                first_emb = valid_embeddings[0]
+                logger.debug(f"First embedding type: {type(first_emb)}, length: {len(first_emb) if isinstance(first_emb, list) else 'N/A'}")
+                if isinstance(first_emb, list) and first_emb:
+                    logger.debug(f"First element type: {type(first_emb[0])}, value: {first_emb[0]}")
+            
             success = await self.vector_db.upsert_documents(
                 chunks=valid_chunks,
                 embeddings=valid_embeddings
