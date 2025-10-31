@@ -87,11 +87,11 @@ export default function CopilotKitPage() {
         {!showSidebar && (
           <button
             onClick={() => setShowSidebar(true)}
-            className="absolute top-6 left-6 z-20 bg-nvidia-darker hover:bg-nvidia-dark border border-nvidia-border text-nvidia-text p-2.5 rounded-lg transition-all duration-200 shadow-lg hover:border-nvidia-green"
+            className="absolute top-3 left-3 sm:top-4 sm:left-4 md:top-6 md:left-6 z-20 bg-nvidia-darker hover:bg-nvidia-dark border border-nvidia-border text-nvidia-text p-2 sm:p-2.5 rounded-lg transition-all duration-200 shadow-lg hover:border-nvidia-green active:scale-95"
             aria-label="Open sidebar"
           >
             <svg
-              className="w-5 h-5"
+              className="w-4 h-4 sm:w-5 sm:h-5"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"

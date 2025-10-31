@@ -172,62 +172,42 @@ export function ChatInterface() {
   return (
     <div className="flex flex-col h-screen bg-nvidia-dark">
       {/* Header */}
-      <header className="bg-nvidia-darker border-b border-nvidia-green/20 px-6 py-4 flex items-center justify-between shadow-lg">
-        <div className="flex items-center gap-4">
-          <NvidiaLogo className="w-32 h-8 text-white" />
-          <div className="h-6 w-px bg-nvidia-green/30" />
-          <h1 className="text-white font-semibold text-lg">Retail AI Agent Team</h1>
+      <header className="bg-nvidia-darker border-b border-nvidia-green/20 px-4 sm:px-6 md:px-8 py-4 md:py-5 flex items-center justify-between shadow-lg flex-shrink-0 relative z-20">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <NvidiaLogo className="w-28 h-7 sm:w-32 sm:h-8 md:w-36 md:h-9 text-white flex-shrink-0" />
+          <div className="h-6 sm:h-7 w-px bg-nvidia-green/30 flex-shrink-0" />
+          <h1 className="text-white font-semibold text-base sm:text-lg md:text-xl truncate">Retail AI Agent Team</h1>
         </div>
-        <div className="flex items-center gap-3">
-          <span className="text-nvidia-gray text-sm hidden md:block">Powered by NVIDIA AI</span>
-          <div className="w-2 h-2 rounded-full bg-nvidia-green animate-pulse" />
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <span className="text-nvidia-gray text-sm hidden lg:block">Powered by NVIDIA AI</span>
+          <div className="w-2.5 h-2.5 rounded-full bg-nvidia-green animate-pulse" />
         </div>
       </header>
 
       {/* Chat Messages */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-8">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {messages.length === 1 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-              {quickSuggestions.map((suggestion, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => handleSuggestionClick(suggestion)}
-                  className="bg-nvidia-darker border border-nvidia-border hover:border-nvidia-green p-4 rounded-xl text-left transition-all duration-200 hover:shadow-lg hover:shadow-nvidia-green/10 group"
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl flex-shrink-0">{suggestion.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-nvidia-text font-semibold group-hover:text-nvidia-green transition-colors">
-                        {suggestion.text}
-                      </h3>
-                      <p className="text-nvidia-gray text-sm mt-1">{suggestion.description}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
-
-        {messages.map((message) => (
+      <div className="flex-1 overflow-y-auto overflow-x-hidden px-4 sm:px-6 md:px-8 lg:px-10 py-8 sm:py-10 md:py-12">
+        <div className="max-w-5xl mx-auto pb-8">
+          {/* Messages */}
+          <div className="space-y-5 sm:space-y-6 md:space-y-7">
+            {messages.map((message) => (
           <div
             key={message.id}
-            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
+            className={`flex ${message.role === "user" ? "justify-end" : "justify-start"} animate-fade-in`}
           >
             <div
-              className={`max-w-3xl w-full ${
+              className={`max-w-full sm:max-w-[90%] md:max-w-4xl w-full ${
                 message.role === "user"
                   ? "bg-nvidia-green/10 border border-nvidia-green/30"
                   : message.role === "system"
-                  ? "bg-nvidia-purple/10 border border-nvidia-purple/30"
+                  ? "bg-nvidia-purple/5 border border-nvidia-purple/20"
                   : "bg-nvidia-darker border border-nvidia-border"
-              } rounded-2xl px-6 py-4 shadow-lg`}
+              } rounded-xl sm:rounded-2xl px-4 sm:px-5 md:px-7 py-4 sm:py-5 md:py-6 shadow-lg`}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex items-start gap-3 sm:gap-4">
                 {message.role !== "user" && (
-                  <div className="w-8 h-8 rounded-full bg-nvidia-green/20 flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-nvidia-green/20 flex items-center justify-center flex-shrink-0">
                     <svg
-                      className="w-5 h-5 text-nvidia-green"
+                      className="w-5 h-5 sm:w-6 sm:h-6 text-nvidia-green"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -241,27 +221,28 @@ export function ChatInterface() {
                     </svg>
                   </div>
                 )}
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <div
-                    className="text-nvidia-text leading-relaxed"
+                    className="text-nvidia-text text-base sm:text-lg leading-relaxed break-words"
                     dangerouslySetInnerHTML={{ __html: formatContent(message.content) }}
                   />
-                  <div className="flex items-center justify-between mt-3">
-                    <span className="text-nvidia-gray text-xs">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-3 sm:mt-4">
+                    <span className="text-nvidia-gray text-sm">
                       {isClient ? formatTimestamp(message.timestamp) : ''}
                     </span>
                     {message.metadata?.confidence && (
-                      <span className="text-nvidia-green text-xs">
+                      <span className="text-nvidia-green text-sm font-medium whitespace-nowrap">
                         {(message.metadata.confidence * 100).toFixed(0)}% confidence
                       </span>
                     )}
                   </div>
                   {message.metadata?.sources && (
-                    <div className="mt-2 flex flex-wrap gap-2">
+                    <div className="mt-3 flex flex-wrap gap-2">
                       {message.metadata.sources.map((source, idx) => (
                         <span
                           key={idx}
-                          className="text-xs bg-nvidia-green/10 text-nvidia-green px-2 py-1 rounded"
+                          className="text-xs bg-nvidia-green/10 text-nvidia-green px-3 py-1.5 rounded-lg truncate max-w-[200px] font-medium"
+                          title={source}
                         >
                           {source}
                         </span>
@@ -270,9 +251,9 @@ export function ChatInterface() {
                   )}
                 </div>
                 {message.role === "user" && (
-                  <div className="w-8 h-8 rounded-full bg-nvidia-green flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-nvidia-green flex items-center justify-center flex-shrink-0">
                     <svg
-                      className="w-5 h-5 text-nvidia-darker"
+                      className="w-5 h-5 sm:w-6 sm:h-6 text-nvidia-darker"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -290,8 +271,34 @@ export function ChatInterface() {
             </div>
           </div>
         ))}
+          </div>
+
+          {/* Quick Suggestions - Show only on welcome screen */}
+          {messages.length === 1 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mt-12 mb-8">
+              {quickSuggestions.map((suggestion, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSuggestionClick(suggestion)}
+                  className="bg-nvidia-darker border border-nvidia-border hover:border-nvidia-green p-6 sm:p-7 rounded-xl text-left transition-all duration-200 hover:shadow-lg hover:shadow-nvidia-green/10 group active:scale-[0.98] min-h-[100px]"
+                >
+                  <div className="flex items-start gap-3 sm:gap-4">
+                    <span className="text-2xl sm:text-3xl flex-shrink-0 leading-none">{suggestion.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-nvidia-text text-base sm:text-lg font-semibold group-hover:text-nvidia-green transition-colors">
+                        {suggestion.text}
+                      </h3>
+                      <p className="text-nvidia-gray text-sm sm:text-base mt-1 line-clamp-2">{suggestion.description}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Typing Indicator */}
           {isTyping && (
-            <div className="flex justify-start">
+            <div className="flex justify-start mt-4">
               <div className="max-w-3xl bg-nvidia-darker border border-nvidia-border rounded-2xl px-6 py-4">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-nvidia-green animate-bounce" />
@@ -301,14 +308,15 @@ export function ChatInterface() {
               </div>
             </div>
           )}
-          <div ref={messagesEndRef} />
+          {/* Bottom spacer so last items never hide behind the input bar */}
+          <div className="h-36 sm:h-40 md:h-44" ref={messagesEndRef} />
         </div>
       </div>
 
       {/* Input Area */}
-      <div className="border-t border-nvidia-border bg-nvidia-darker px-4 md:px-6 py-6 shadow-lg">
-        <div className="max-w-4xl mx-auto">
-          <div className="relative flex items-end gap-3 md:gap-4">
+      <div className="border-t border-nvidia-border bg-nvidia-darker px-4 sm:px-6 md:px-8 py-4 sm:py-5 md:py-6 shadow-[0_-4px_20px_rgba(0,0,0,0.5)] flex-shrink-0 relative z-10">
+        <div className="max-w-5xl mx-auto">
+          <div className="relative flex items-end gap-3 sm:gap-4">
             <div className="flex-1 relative">
               <textarea
                 ref={textareaRef}
@@ -316,14 +324,14 @@ export function ChatInterface() {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyPress={handleKeyPress}
                 placeholder="Message NVIDIA Retail AI Agent..."
-                className="w-full bg-nvidia-dark border border-nvidia-border rounded-2xl px-4 md:px-6 py-3 md:py-4 text-nvidia-text placeholder-nvidia-gray focus:outline-none focus:border-nvidia-green focus:ring-2 focus:ring-nvidia-green/20 resize-none min-h-[56px] max-h-[200px]"
+                className="w-full bg-nvidia-dark border border-nvidia-border rounded-xl sm:rounded-2xl px-4 sm:px-5 md:px-6 py-3 sm:py-3.5 md:py-4 text-base text-nvidia-text placeholder-nvidia-gray focus:outline-none focus:border-nvidia-green focus:ring-2 focus:ring-nvidia-green/20 resize-none min-h-[52px] sm:min-h-[56px] md:min-h-[60px] max-h-[160px] sm:max-h-[180px] md:max-h-[200px] transition-all"
                 rows={1}
               />
             </div>
             <button
               onClick={handleSend}
               disabled={!input.trim()}
-              className="bg-nvidia-green hover:bg-nvidia-green-hover disabled:bg-nvidia-gray disabled:cursor-not-allowed text-nvidia-darker font-semibold px-4 md:px-6 py-3 md:py-4 rounded-2xl transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-nvidia-green/20"
+              className="bg-nvidia-green hover:bg-nvidia-green-hover disabled:bg-nvidia-gray disabled:cursor-not-allowed disabled:opacity-50 text-nvidia-darker font-semibold px-5 sm:px-6 md:px-8 py-3 sm:py-3.5 md:py-4 rounded-xl sm:rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-nvidia-green/20 active:scale-95 flex-shrink-0 min-h-[52px] sm:min-h-[56px] md:min-h-[60px]"
             >
               <svg
                 className="w-5 h-5"
@@ -338,10 +346,10 @@ export function ChatInterface() {
                   d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
                 />
               </svg>
-              <span className="hidden md:inline">Send</span>
+              <span className="hidden sm:inline text-base">Send</span>
             </button>
           </div>
-          <p className="text-nvidia-gray text-xs mt-3 text-center">
+          <p className="text-nvidia-gray text-xs sm:text-sm mt-3 sm:mt-4 text-center px-2">
             NVIDIA AI can make mistakes. Consider checking important information.
           </p>
         </div>

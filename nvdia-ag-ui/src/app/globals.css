@@ -40,6 +40,30 @@ html {
   overflow: hidden;
 }
 
+/* Ensure proper scrolling in chat container */
+.overflow-y-auto {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Prevent content overlap with fixed elements */
+.flex-col.h-screen {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Ensure z-index stacking context */
+.z-10 {
+  position: relative;
+  z-index: 10;
+}
+
+.z-20 {
+  position: relative;
+  z-index: 20;
+}
+
 /* Custom Scrollbar - NVIDIA Style */
 ::-webkit-scrollbar {
   width: 8px;
@@ -103,4 +127,62 @@ img, video, iframe {
   transition-property: color, background-color, border-color;
   transition-timing-function: ease-in-out;
   transition-duration: 200ms;
+}
+
+/* Mobile-specific optimizations */
+@media (max-width: 640px) {
+  /* Larger touch targets */
+  button,
+  a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Prevent text size adjustment on mobile */
+  body {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+  
+  /* Smoother scrolling on mobile */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Optimize font sizes for readability */
+  body {
+    font-size: 14px;
+  }
+}
+
+/* Tablet optimizations */
+@media (min-width: 641px) and (max-width: 1024px) {
+  body {
+    font-size: 15px;
+  }
+}
+
+/* Desktop optimizations */
+@media (min-width: 1025px) {
+  body {
+    font-size: 16px;
+  }
+  
+  /* Custom scrollbar for desktop only */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,6 +1,0 @@
-python-dotenv
-openai
-qdrant-client
-docling
-requests
-aiohttp
