@@ -18,8 +18,8 @@ class NvidiaEmbeddingGenerator(IEmbeddingGenerator):
     Key differences from generic embeddings:
     - input_type="query" for search queries (optimized for retrieval)
     - input_type="passage" for documents (optimized for indexing)
-    - 300-dimensional vectors (efficient yet powerful)
-    - 2048 token limit
+    - 2048-dimensional vectors (300M model parameters, not embedding dims)
+    - 8192 token limit
     """
     
     def __init__(self, config: NvidiaAPIConfig):
