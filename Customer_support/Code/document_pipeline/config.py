@@ -107,6 +107,7 @@ class Config:
         processing = DocumentProcessingConfig(
             chunk_size=int(os.getenv("CHUNK_SIZE", "512")),
             chunk_overlap=int(os.getenv("CHUNK_OVERLAP", "50")),
+            max_tokens=int(os.getenv("MAX_TOKENS", "8192")),
             batch_size=int(os.getenv("BATCH_SIZE", "10"))
         )
         
