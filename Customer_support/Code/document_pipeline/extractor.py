@@ -47,16 +47,35 @@ class DoclingExtractor(IDocumentExtractor):
             
             # Extract text with page information
             documents = []
-            
-            # Get markdown output (preserves structure)
-            full_text = result.document.export_to_markdown()
-            
-            # Split by pages if available
-            if hasattr(result.document, 'pages') and result.document.pages:
-                for page_num, page in enumerate(result.document.pages, start=1):
-                    page_text = page.export_to_markdown()
-                    
-                    if page_text.strip():
+
+            # docling's return shape can vary between versions. Normalize access.
+            doc_obj = getattr(result, 'document', result)
+
+            # Get markdown output (preserves structure) if available
+            if hasattr(doc_obj, 'export_to_markdown'):
+                try:
+                    full_text = doc_obj.export_to_markdown()
+                except Exception:
+                    full_text = str(doc_obj)
+            else:
+                full_text = str(doc_obj)
+
+            # Split by pages if available (pages may be objects or dicts)
+            pages = getattr(doc_obj, 'pages', None)
+            if pages:
+                for page_num, page in enumerate(pages, start=1):
+                    if hasattr(page, 'export_to_markdown'):
+                        try:
+                            page_text = page.export_to_markdown()
+                        except Exception:
+                            page_text = str(page)
+                    elif isinstance(page, dict):
+                        # Try common keys
+                        page_text = page.get('text') or page.get('content') or str(page)
+                    else:
+                        page_text = str(page)
+
+                    if page_text and page_text.strip():
                         doc = Document(
                             content=page_text,
                             metadata={

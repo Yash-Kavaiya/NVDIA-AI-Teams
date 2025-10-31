@@ -5,14 +5,22 @@ Demonstrates dependency injection and composition of SOLID components.
 import asyncio
 import logging
 import sys
+import os
 from pathlib import Path
 
 # Setup logging
+# Create logs directory relative to this script file so logging works
+# regardless of current working directory when the script is executed.
+BASE_DIR = Path(__file__).parent.resolve()
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(parents=True, exist_ok=True)
+LOG_FILE = LOG_DIR / "document_pipeline.log"
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('logs/document_pipeline.log'),
+        logging.FileHandler(str(LOG_FILE)),
         logging.StreamHandler()
     ]
 )
@@ -172,7 +180,22 @@ def main():
     """Main entry point."""
     # Load and validate configuration
     config = Config.from_env()
-    
+    # Quick diagnostic: check critical environment variables and report which are missing.
+    # Allow either NVIDIA_EMBEDDING_URL (used in some pipelines) or NVIDIA_BASE_URL (used here)
+    required_vars = [
+        "NVIDIA_API_KEY",
+        "QDRANT_URL",
+    ]
+    missing = [v for v in required_vars if not os.getenv(v)]
+    # Check for either of the possible NVIDIA URL env var names
+    if not (os.getenv("NVIDIA_EMBEDDING_URL") or os.getenv("NVIDIA_BASE_URL")):
+        missing.append("NVIDIA_EMBEDDING_URL|NVIDIA_BASE_URL")
+    if missing:
+        logger.error("Missing required environment variables: %s", ", ".join(missing))
+        logger.error("Please create a `.env` file in this folder or export the variables.")
+        logger.error("You can copy `.env.example` and fill in the values.")
+        sys.exit(1)
+
     try:
         config.validate()
     except ValueError as e:
