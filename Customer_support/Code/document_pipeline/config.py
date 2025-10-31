@@ -41,7 +41,7 @@ class QdrantConfig:
     """Qdrant vector database configuration."""
     url: str
     collection_name: str
-    embedding_dim: int = 300  # llama-3.2-nemoretriever-300m-embed-v2
+    embedding_dim: int = 2048  # llama-3.2-nemoretriever-300m-embed-v2 (300m = params, not dims)
     
     def validate(self) -> None:
         """Validate Qdrant configuration."""
@@ -101,7 +101,7 @@ class Config:
         qdrant = QdrantConfig(
             url=os.getenv("QDRANT_URL", "http://localhost:6333"),
             collection_name=os.getenv("COLLECTION_NAME", "customer_support_docs"),
-            embedding_dim=int(os.getenv("EMBEDDING_DIM", "300"))
+            embedding_dim=int(os.getenv("EMBEDDING_DIM", "2048"))
         )
         
         processing = DocumentProcessingConfig(
