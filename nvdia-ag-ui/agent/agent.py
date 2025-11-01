@@ -22,6 +22,14 @@ from google.genai.types import Content, Part , FunctionDeclaration
 from google.adk.models import LlmResponse, LlmRequest
 from google.genai import types
 
+
+from .product_search_agent.agent import root_agent as product_search_agent
+from .review_text_analysis_agent.agent import root_agent as review_text_analysis_agent
+from .inventory_agent.agent import root_agent as inventory_agent
+from .shopping_agent.agent import root_agent as shopping_agent
+from .customer_support_agent.agent import root_agent as customer_support_agent
+
+
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from enum import Enum
@@ -33,40 +41,6 @@ class ProverbsState(BaseModel):
         default_factory=list,
         description='The list of already written proverbs',
     )
-
-
-def set_proverbs(
-  tool_context: ToolContext,
-  new_proverbs: list[str]
-) -> Dict[str, str]:
-    """
-    Set the list of provers using the provided new list.
-
-    Args:
-        "new_proverbs": {
-            "type": "array",
-            "items": {"type": "string"},
-            "description": "The new list of proverbs to maintain",
-        }
-
-    Returns:
-        Dict indicating success status and message
-    """
-    try:
-        # Put this into a state object just to confirm the shape
-        new_state = { "proverbs": new_proverbs}
-        tool_context.state["proverbs"] = new_state["proverbs"]
-        return {"status": "success", "message": "Proverbs updated successfully"}
-
-    except Exception as e:
-        return {"status": "error", "message": f"Error updating proverbs: {str(e)}"}
-
-
-
-def get_weather(tool_context: ToolContext, location: str) -> Dict[str, str]:
-    """Get the weather for a given location. Ensure location is fully spelled out."""
-    return {"status": "success", "message": f"The weather in {location} is sunny."}
-
 
 
 def on_before_agent(callback_context: CallbackContext):
@@ -82,9 +56,6 @@ def on_before_agent(callback_context: CallbackContext):
 
     return None
 
-
-
-
 # --- Define the Callback Function ---
 #  modifying the agent's system prompt to incude the current state of the proverbs list
 def before_model_modifier(
@@ -92,7 +63,7 @@ def before_model_modifier(
 ) -> Optional[LlmResponse]:
     """Inspects/modifies the LLM request or skips the call."""
     agent_name = callback_context.agent_name
-    if agent_name == "ProverbsAgent":
+    if agent_name == "retail_coordinator":
         proverbs_json = "No proverbs yet"
         if "proverbs" in callback_context.state and callback_context.state["proverbs"] is not None:
             try:
@@ -121,11 +92,6 @@ def before_model_modifier(
 
     return None
 
-
-
-
-
-
 # --- Define the Callback Function ---
 def simple_after_model_modifier(
     callback_context: CallbackContext, llm_response: LlmResponse
@@ -133,7 +99,7 @@ def simple_after_model_modifier(
     """Stop the consecutive tool calling of the agent"""
     agent_name = callback_context.agent_name
     # --- Inspection ---
-    if agent_name == "ProverbsAgent":
+    if agent_name == "retail_coordinator":
         original_text = ""
         if llm_response.content and llm_response.content.parts:
             # Assuming simple text response for this example
@@ -147,47 +113,96 @@ def simple_after_model_modifier(
             return None # Nothing to modify
     return None
 
-
-proverbs_agent = LlmAgent(
-        name="ProverbsAgent",
+retail_coordinator = LlmAgent(
+        name="retail_coordinator",
         model="gemini-2.5-flash",
         instruction=f"""
-        When a user asks you to do anything regarding proverbs, you MUST use the set_proverbs tool.
-
-        IMPORTANT RULES ABOUT PROVERBS AND THE SET_PROVERBS TOOL:
-        1. Always use the set_proverbs tool for any proverbs-related requests
-        2. Always pass the COMPLETE LIST of proverbs to the set_proverbs tool. If the list had 5 proverbs and you removed one, you must pass the complete list of 4 remaining proverbs.
-        3. You can use existing proverbs if one is relevant to the user's request, but you can also create new proverbs as required.
-        4. Be creative and helpful in generating complete, practical proverbs
-        5. After using the tool, provide a brief summary of what you create, removed, or changed        7.
-
-        Examples of when to use the set_proverbs tool:
-        - "Add a proverb about soap" → Use tool with an array containing the existing list of proverbs with the new proverb about soap at the end.
-        - "Remove the first proverb" → Use tool with an array containing the all of the existing proverbs except the first one"
-        - "Change any proverbs about cats to mention that they have 18 lives" → If no proverbs mention cats, do not use the tool. If one or more proverbs do mention cats, change them to mention cats having 18 lives, and use the tool with an array of all of the proverbs, including ones that were changed and ones that did not require changes.
-
-        Do your best to ensure proverbs plausibly make sense.
-
-
-        IMPORTANT RULES ABOUT WEATHER AND THE GET_WEATHER TOOL:
-        1. Only call the get_weather tool if the user asks you for the weather in a given location.
-        2. If the user does not specify a location, you can use the location "Everywhere ever in the whole wide world"
-
-        Examples of when to use the get_weather tool:
-        - "What's the weather today in Tokyo?" → Use the tool with the location "Tokyo"
-        - "Whats the weather right now" → Use the location "Everywhere ever in the whole wide world"
-        - Is it raining in London? → Use the tool with the location "London"
+        You are the main coordinator for a comprehensive retail agent team. Your role is to:
+    
+    1. Intelligent Request Routing:
+       - Analyze customer requests and identify the appropriate specialized agent(s)
+       - Route simple queries to a single agent
+       - Coordinate multiple agents for complex, multi-faceted requests
+       - Ensure the right specialist handles each aspect of the request
+    
+    2. Multi-Agent Coordination:
+       - Orchestrate parallel processing when multiple agents are needed
+       - Manage sequential workflows (e.g., search → inventory → cart)
+       - Synthesize responses from multiple agents into coherent answers
+       - Handle dependencies between agent tasks
+    
+    3. Context Management:
+       - Maintain conversation context across agent handoffs
+       - Remember customer preferences and previous interactions
+       - Track the state of ongoing tasks and processes
+       - Ensure continuity in multi-turn conversations
+    
+    4. Response Synthesis:
+       - Combine outputs from multiple agents intelligently
+       - Present unified, coherent responses to customers
+       - Eliminate redundancy in multi-agent responses
+       - Prioritize and organize information effectively
+    
+    5. Escalation and Fallback:
+       - Handle edge cases that don't fit a specific agent
+       - Provide graceful fallbacks when agents can't fulfill requests
+       - Escalate to human support when necessary
+       - Guide customers through complex scenarios
+    
+    Available Specialized Sub-Agents:
+    
+    🔍 product_search_agent
+       - Product searches and filtering
+       - Product comparisons and recommendations
+       - Detailed product information
+       - Alternative suggestions
+    
+    📊 review_text_analysis_agent
+       - Customer review analysis
+       - Sentiment analysis
+       - Product feedback insights
+       - Review summarization
+    
+    📦 inventory_agent
+       - Stock availability checks
+       - Multi-location inventory tracking
+       - Delivery time estimates
+       - Restock notifications
+    
+    🛒 shopping_agent
+       - Shopping cart management
+       - Checkout processing
+       - Discount and coupon application
+       - Order placement
+    
+    💬 customer_support_agent
+       - Order inquiries and tracking
+       - Returns, refunds, and exchanges
+       - Policy information
+       - Issue resolution
+    
+    Coordination Strategies:
+    
+    - For product browsing: product_search_agent → inventory_agent
+    - For informed purchases: product_search_agent → review_text_analysis_agent → inventory_agent
+    - For cart operations: shopping_agent (may consult inventory_agent)
+    - For post-purchase: customer_support_agent
+    - For complex queries: Coordinate multiple agents as needed
+    
+    Always prioritize customer satisfaction, provide clear and helpful responses, 
+    and ensure a seamless experience across all retail operations.
         """,
-        tools=[set_proverbs, get_weather],
+        sub_agents=[product_search_agent,review_text_analysis_agent,inventory_agent,
+        customer_support_agent],
         before_agent_callback=on_before_agent,
         before_model_callback=before_model_modifier,
         after_model_callback = simple_after_model_modifier
     )
 
 # Create ADK middleware agent instance
-adk_proverbs_agent = ADKAgent(
-    adk_agent=proverbs_agent,
-    app_name="proverbs_app",
+adk_retail_coordinator = ADKAgent(
+    adk_agent=retail_coordinator,
+    app_name="retail_coordinator_app",
     user_id="demo_user",
     session_timeout_seconds=3600,
     use_in_memory_services=True
@@ -206,7 +221,7 @@ app.add_middleware(
 )
 
 # Add the ADK endpoint
-add_adk_fastapi_endpoint(app, adk_proverbs_agent, path="/")
+add_adk_fastapi_endpoint(app, adk_retail_coordinator, path="/")
 
 if __name__ == "__main__":
     import os
