@@ -88,8 +88,6 @@ def before_model_modifier(
         original_instruction.parts[0].text = modified_text
         llm_request.config.system_instruction = original_instruction
 
-
-
     return None
 
 # --- Define the Callback Function ---
@@ -112,10 +110,10 @@ def simple_after_model_modifier(
         else:
             return None # Nothing to modify
     return None
-
+from google.adk.models.lite_llm import LiteLlm
 retail_coordinator = LlmAgent(
         name="retail_coordinator",
-        model="gemini-2.5-flash",
+        model=LiteLlm(model="nvidia_nim/nvidia/llama-3.1-nemotron-nano-8b-v1"),
         instruction=f"""
         You are the main coordinator for a comprehensive retail agent team. Your role is to:
     

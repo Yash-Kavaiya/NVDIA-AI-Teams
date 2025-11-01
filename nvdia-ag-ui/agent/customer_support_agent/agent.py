@@ -7,10 +7,10 @@ NVIDIA's RAG pipeline with document embeddings and Qdrant vector database.
 
 from google.adk.agents import Agent
 from .tools import search_policy_documents, get_collection_info
-
+from google.adk.models.lite_llm import LiteLlm
 root_agent = Agent(
     name='customer_support_agent',
-    model='gemini-2.0-flash',
+    model=LiteLlm(model="nvidia_nim/nvidia/llama-3.1-nemotron-nano-8b-v1"),
     description='An intelligent customer support agent that answers policy questions using RAG retrieval from retail compliance documents stored in Qdrant.',
     tools=[search_policy_documents, get_collection_info],
     instruction="""

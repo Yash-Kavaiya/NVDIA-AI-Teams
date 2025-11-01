@@ -7,10 +7,10 @@ using NVIDIA's multimodal embeddings and Qdrant vector database.
 
 from google.adk.agents import Agent
 from . import tools
-
+from google.adk.models.lite_llm import LiteLlm
 root_agent = Agent(
     name='product_search_agent',
-    model='gemini-2.0-flash',
+    model=LiteLlm(model="nvidia_nim/nvidia/llama-3.1-nemotron-nano-8b-v1"),
     description='An intelligent agent that performs semantic search across fashion product images using NVIDIA embeddings and Qdrant vector database.',
     instruction="""
 You are an expert Product Search Agent specializing in fashion retail with access to a powerful multimodal search engine.

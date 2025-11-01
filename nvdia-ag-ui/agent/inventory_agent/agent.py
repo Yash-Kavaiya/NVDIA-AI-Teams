@@ -10,7 +10,7 @@ from . import tools
 
 root_agent = Agent(
     name='inventory_agent',
-    model=LiteLlm(model="nvidia/llama-3.1-nemotron-nano-8b-v1"),
+    model=LiteLlm(model="nvidia_nim/nvidia/llama-3.1-nemotron-nano-8b-v1"),
     description='An intelligent agent that analyzes warehouse and retail sales data for inventory insights.',
     instruction="""
 You are an expert Inventory Analysis Agent with access to comprehensive warehouse and retail sales data.
