@@ -1,524 +1,350 @@
 # NVIDIA Retail AI - EKS Deployment Guide
 
-This directory contains all necessary files to deploy the NVIDIA Retail AI solution to Amazon EKS.
+This directory contains all the necessary files to deploy the NVIDIA Retail AI system to Amazon EKS (Elastic Kubernetes Service).
 
-## Architecture Overview
+## 📋 Prerequisites
 
-The solution consists of three main components:
+Before deploying, ensure you have the following installed:
 
-1. **UI Frontend** - Next.js 15 application with CopilotKit (Port 3000)
-2. **Agent Backend** - Python FastAPI + Google ADK agents (Port 8000)
-3. **Qdrant Vector Database** - Vector storage for embeddings (Ports 6333/6334)
+- **AWS CLI** (v2 or later) - [Installation Guide](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html)
+- **kubectl** (v1.28 or later) - [Installation Guide](https://kubernetes.io/docs/tasks/tools/)
+- **Docker** (v20 or later) - [Installation Guide](https://docs.docker.com/get-docker/)
+
+## 🏗️ Architecture Overview
+
+The deployment consists of the following components:
+
+1. **Qdrant Vector Database** - Stores image and document embeddings
+2. **Python Agent Backend** - Multi-agent system with product search, inventory, and review analysis
+3. **Next.js Frontend** - User interface for interacting with AI agents
+4. **Persistent Storage** - AWS EBS volumes for data persistence
+
+### Service Architecture
 
 ```
-┌─────────────────┐
-│   Internet      │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│  ALB (Ingress)  │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  UI Frontend    │────▶│  Agent Backend   │────▶│     Qdrant      │
-│   (Next.js)     │     │    (FastAPI)     │     │  (Vector DB)    │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
-                               │
-                               ▼
-                        ┌──────────────────┐
-                        │  NVIDIA APIs     │
-                        │  (Embeddings)    │
-                        └──────────────────┘
+┌─────────────────────────────────────────────────────────┐
+│                    AWS EKS Cluster                       │
+│                                                          │
+│  ┌──────────────┐      ┌──────────────┐                │
+│  │   Frontend   │◄─────┤ Load Balancer│◄─── Internet   │
+│  │  (Next.js)   │      └──────────────┘                │
+│  └───────┬──────┘                                       │
+│          │                                               │
+│          ▼                                               │
+│  ┌──────────────┐      ┌──────────────┐                │
+│  │    Agent     │◄────►│   Qdrant     │                │
+│  │  (FastAPI)   │      │  (Vector DB) │                │
+│  └──────┬───────┘      └──────┬───────┘                │
+│         │                     │                          │
+│         ▼                     ▼                          │
+│  ┌──────────────┐      ┌──────────────┐                │
+│  │ Agent Data   │      │ Qdrant Data  │                │
+│  │    (EBS)     │      │    (EBS)     │                │
+│  └──────────────┘      └──────────────┘                │
+└─────────────────────────────────────────────────────────┘
 ```
 
-## Prerequisites
-
-### Required Tools
-
-1. **AWS CLI** (v2.x or higher)
-   ```bash
-   aws --version
-   ```
-
-2. **kubectl** (v1.28 or higher)
-   ```bash
-   kubectl version --client
-   ```
-
-3. **eksctl** (v0.150 or higher)
-   ```bash
-   eksctl version
-   ```
-
-4. **Docker** (v20.x or higher)
-   ```bash
-   docker --version
-   ```
-
-5. **Helm** (v3.x or higher) - Optional but recommended
-   ```bash
-   helm version
-   ```
-
-### AWS Account Setup
-
-1. **Configure AWS credentials** (DO NOT share these publicly)
-   ```bash
-   aws configure
-   ```
-
-2. **Verify AWS access**
-   ```bash
-   aws sts get-caller-identity
-   ```
-
-3. **Required IAM permissions:**
-   - EKS cluster creation
-   - ECR repository management
-   - IAM role/policy creation
-   - VPC and networking
-   - Load Balancer management
-
-### API Keys Required
-
-- **Google API Key** - For Google ADK agents
-- **NVIDIA API Key** - For NVIDIA NIM embeddings
-- Get NVIDIA API key from: https://build.nvidia.com/
-
-## Deployment Steps
-
-### Step 1: Create EKS Cluster
-
-```bash
-cd k8s
-chmod +x create-eks-cluster.sh
-./create-eks-cluster.sh
-```
-
-This script will:
-- Create an EKS cluster with managed node groups
-- Install AWS Load Balancer Controller
-- Install EBS CSI Driver for persistent volumes
-- Configure OIDC provider for IAM roles
-
-**Estimated time: 15-20 minutes**
-
-### Step 2: Configure Secrets
-
-**IMPORTANT: Never commit secrets to Git**
-
-#### Option A: Using kubectl (Quick setup)
-
-```bash
-kubectl create namespace nvidia-retail-ai
-
-kubectl create secret generic api-keys \
-  --from-literal=google-api-key=YOUR_GOOGLE_API_KEY \
-  --from-literal=nvidia-api-key=YOUR_NVIDIA_API_KEY \
-  -n nvidia-retail-ai
-```
-
-#### Option B: Using AWS Secrets Manager (Production recommended)
-
-1. Store secrets in AWS Secrets Manager:
-   ```bash
-   aws secretsmanager create-secret \
-     --name nvidia-retail-ai/google-api-key \
-     --secret-string "YOUR_GOOGLE_API_KEY"
-
-   aws secretsmanager create-secret \
-     --name nvidia-retail-ai/nvidia-api-key \
-     --secret-string "YOUR_NVIDIA_API_KEY"
-   ```
-
-2. Install External Secrets Operator:
-   ```bash
-   helm repo add external-secrets https://charts.external-secrets.io
-   helm install external-secrets \
-     external-secrets/external-secrets \
-     -n external-secrets-system \
-     --create-namespace
-   ```
-
-3. Uncomment the External Secrets section in `base/secrets-template.yaml`
-
-### Step 3: Deploy Application
-
-```bash
-chmod +x deploy.sh
-./deploy.sh
-```
-
-This script will:
-- Create ECR repositories
-- Build Docker images for UI and Agent
-- Push images to ECR
-- Create IAM roles for service accounts
-- Deploy all Kubernetes resources
-- Wait for pods to be ready
-
-**Estimated time: 10-15 minutes**
-
-### Step 4: Verify Deployment
-
-```bash
-# Check all resources
-kubectl get all -n nvidia-retail-ai
-
-# Check pod status
-kubectl get pods -n nvidia-retail-ai
-
-# Check ingress
-kubectl get ingress -n nvidia-retail-ai
-
-# Get load balancer URL
-kubectl get ingress nvidia-retail-ai-ingress -n nvidia-retail-ai -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
-```
-
-### Step 5: Access Application
-
-1. Get the ALB DNS name:
-   ```bash
-   export LB_URL=$(kubectl get ingress nvidia-retail-ai-ingress -n nvidia-retail-ai -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-   echo "Application URL: http://${LB_URL}"
-   ```
-
-2. (Optional) Configure DNS:
-   - Create a CNAME record pointing to the ALB DNS
-   - Update the Ingress host in `base/ui-deployment.yaml`
-
-3. (Optional) Configure SSL/TLS:
-   - Request ACM certificate
-   - Update `<ACM_CERTIFICATE_ARN>` in `base/ui-deployment.yaml`
-
-## Files Structure
+## 📁 Directory Structure
 
 ```
 k8s/
-├── README.md                      # This file
-├── create-eks-cluster.sh          # EKS cluster creation script
-├── deploy.sh                      # Application deployment script
-├── iam-policy.json                # IAM policy for service accounts
-├── base/                          # Kubernetes manifests
-│   ├── namespace.yaml             # Namespace definition
-│   ├── configmap.yaml             # Application configuration
-│   ├── secrets-template.yaml      # Secrets template (DO NOT COMMIT REAL SECRETS)
-│   ├── qdrant-deployment.yaml     # Qdrant vector database
-│   ├── agent-deployment.yaml      # Agent backend service
-│   └── ui-deployment.yaml         # UI frontend + Ingress
-└── deploy/                        # Generated (gitignored)
+├── manifests/          # Kubernetes manifests
+│   ├── 00-namespace.yaml
+│   ├── 01-configmap.yaml
+│   ├── 02-secrets.yaml
+│   ├── 03-pvc.yaml
+│   ├── 04-qdrant.yaml
+│   ├── 05-agent.yaml
+│   ├── 06-frontend.yaml
+│   └── 07-ingress.yaml
+├── scripts/            # Deployment scripts
+│   ├── 01-setup-aws.sh
+│   ├── 02-build-and-push.sh
+│   ├── 03-deploy.sh
+│   ├── 04-copy-data.sh
+│   ├── 05-status.sh
+│   └── 99-cleanup.sh
+└── README.md          # This file
 ```
 
-## Configuration
+## 🚀 Quick Start Deployment
 
-### Environment Variables
-
-All configuration is managed through ConfigMaps and Secrets:
-
-**ConfigMap (base/configmap.yaml):**
-- `QDRANT_URL`: Qdrant service URL
-- `NVIDIA_EMBEDDING_URL`: NVIDIA API endpoint
-- `EMBEDDING_DIM`: Vector dimensions (4096)
-
-**Secrets (base/secrets-template.yaml):**
-- `google-api-key`: Google AI API key
-- `nvidia-api-key`: NVIDIA NIM API key
-
-### Resource Limits
-
-**Agent Backend:**
-- Requests: 1Gi RAM, 500m CPU
-- Limits: 2Gi RAM, 1000m CPU
-- Replicas: 2
-
-**UI Frontend:**
-- Requests: 512Mi RAM, 250m CPU
-- Limits: 1Gi RAM, 500m CPU
-- Replicas: 2
-
-**Qdrant:**
-- Requests: 2Gi RAM, 1000m CPU
-- Limits: 4Gi RAM, 2000m CPU
-- Storage: 20Gi (EBS gp3)
-
-### Scaling
-
-#### Manual Scaling
+### Step 1: Configure AWS and kubectl
 
 ```bash
-# Scale agent backend
-kubectl scale deployment agent-backend -n nvidia-retail-ai --replicas=4
-
-# Scale UI frontend
-kubectl scale deployment ui-frontend -n nvidia-retail-ai --replicas=3
+cd k8s/scripts
+./01-setup-aws.sh
 ```
 
-#### Auto-scaling (HPA)
+This script will:
+- Set up AWS credentials
+- Configure kubectl to connect to your EKS cluster
+- Verify the connection
 
-Create HPA for agent backend:
+### Step 2: Update Secrets
+
+**IMPORTANT:** Before deploying, update the API keys in `k8s/manifests/02-secrets.yaml`:
+
+```yaml
+stringData:
+  NVIDIA_API_KEY: "your-actual-nvidia-api-key"
+  GOOGLE_API_KEY: "your-actual-google-api-key"
+```
+
+Or create the secret using kubectl:
 
 ```bash
-kubectl autoscale deployment agent-backend \
-  -n nvidia-retail-ai \
-  --cpu-percent=70 \
-  --min=2 \
-  --max=10
+kubectl create secret generic nvidia-retail-secrets \
+  --from-literal=NVIDIA_API_KEY=your-nvidia-api-key \
+  --from-literal=GOOGLE_API_KEY=your-google-api-key \
+  -n nvidia-retail-ai
 ```
 
-## Monitoring and Logging
+### Step 3: Build and Push Docker Images
+
+```bash
+./02-build-and-push.sh
+```
+
+This script will:
+- Authenticate to Amazon ECR
+- Create ECR repositories (if they don't exist)
+- Build Docker images for frontend and agent
+- Push images to ECR
+
+**Note:** This requires Docker to be running on your machine.
+
+### Step 4: Deploy to EKS
+
+```bash
+./03-deploy.sh
+```
+
+This script will:
+- Create the namespace
+- Apply all Kubernetes manifests
+- Wait for services to be ready
+- Display deployment status
+
+### Step 5: Copy Data to Persistent Volumes
+
+```bash
+./04-copy-data.sh
+```
+
+This script copies the inventory data to the agent's persistent volume.
+
+### Step 6: Check Deployment Status
+
+```bash
+./05-status.sh
+```
+
+This script displays:
+- Pod status
+- Service endpoints
+- Frontend URL
+- Recent logs
+
+## 🔍 Verifying the Deployment
+
+### Check Pod Status
+
+```bash
+kubectl get pods -n nvidia-retail-ai
+```
+
+All pods should be in `Running` state:
+```
+NAME                        READY   STATUS    RESTARTS   AGE
+agent-xxxxxxxxx-xxxxx       1/1     Running   0          5m
+frontend-xxxxxxxxx-xxxxx    1/1     Running   0          5m
+qdrant-xxxxxxxxx-xxxxx      1/1     Running   0          5m
+```
+
+### Get Frontend URL
+
+```bash
+kubectl get svc frontend-service -n nvidia-retail-ai
+```
+
+The `EXTERNAL-IP` column will show your Load Balancer URL. It may take a few minutes to provision.
+
+### Access the Application
+
+Once the LoadBalancer is ready, open your browser and navigate to:
+```
+http://<EXTERNAL-IP>
+```
+
+## 📊 Monitoring and Logs
 
 ### View Logs
 
 ```bash
-# Agent backend logs
-kubectl logs -f deployment/agent-backend -n nvidia-retail-ai
+# Agent logs
+kubectl logs -f -n nvidia-retail-ai -l app=agent
 
-# UI frontend logs
-kubectl logs -f deployment/ui-frontend -n nvidia-retail-ai
+# Frontend logs
+kubectl logs -f -n nvidia-retail-ai -l app=frontend
 
 # Qdrant logs
-kubectl logs -f deployment/qdrant -n nvidia-retail-ai
-
-# All logs
-kubectl logs -f -l app=agent-backend -n nvidia-retail-ai --all-containers
+kubectl logs -f -n nvidia-retail-ai -l app=qdrant
 ```
 
-### Port Forwarding
-
-Access services locally for debugging:
+### Describe Pods
 
 ```bash
-# Qdrant dashboard
-kubectl port-forward svc/qdrant 6333:6333 -n nvidia-retail-ai
-# Access at: http://localhost:6333/dashboard
-
-# Agent backend
-kubectl port-forward svc/agent-backend 8000:8000 -n nvidia-retail-ai
-
-# UI frontend
-kubectl port-forward svc/ui-frontend 3000:3000 -n nvidia-retail-ai
+kubectl describe pod -n nvidia-retail-ai <pod-name>
 ```
 
-### Health Checks
+### Check Resource Usage
 
 ```bash
-# Check pod health
-kubectl describe pod -l app=agent-backend -n nvidia-retail-ai
-
-# Check events
-kubectl get events -n nvidia-retail-ai --sort-by='.lastTimestamp'
+kubectl top pods -n nvidia-retail-ai
+kubectl top nodes
 ```
 
-## Troubleshooting
+## 🔧 Troubleshooting
 
-### Common Issues
+### Pods Not Starting
 
-#### 1. Pods not starting
+1. Check pod events:
+   ```bash
+   kubectl describe pod -n nvidia-retail-ai <pod-name>
+   ```
+
+2. Check logs:
+   ```bash
+   kubectl logs -n nvidia-retail-ai <pod-name>
+   ```
+
+3. Common issues:
+   - **ImagePullBackOff**: Check ECR authentication and image names
+   - **CrashLoopBackOff**: Check application logs and environment variables
+   - **Pending**: Check PVC status and node resources
+
+### LoadBalancer Not Getting External IP
 
 ```bash
-# Check pod status
-kubectl get pods -n nvidia-retail-ai
+# Check service status
+kubectl describe svc frontend-service -n nvidia-retail-ai
 
-# Describe pod
-kubectl describe pod <pod-name> -n nvidia-retail-ai
-
-# Check logs
-kubectl logs <pod-name> -n nvidia-retail-ai
+# Check AWS Load Balancer Controller logs
+kubectl logs -n kube-system -l app.kubernetes.io/name=aws-load-balancer-controller
 ```
 
-**Common causes:**
-- Missing secrets (api-keys)
-- Image pull errors (check ECR permissions)
-- Resource constraints (check node capacity)
-
-#### 2. Qdrant storage issues
+### Qdrant Connection Issues
 
 ```bash
-# Check PVC status
-kubectl get pvc -n nvidia-retail-ai
+# Check if Qdrant is running
+kubectl exec -it -n nvidia-retail-ai <agent-pod> -- curl http://qdrant:6333
 
-# Describe PVC
-kubectl describe pvc qdrant-storage-pvc -n nvidia-retail-ai
+# Check Qdrant logs
+kubectl logs -n nvidia-retail-ai -l app=qdrant
 ```
 
-**Solution:** Ensure EBS CSI driver is installed
-
-#### 3. Load balancer not provisioning
-
-```bash
-# Check ingress status
-kubectl describe ingress nvidia-retail-ai-ingress -n nvidia-retail-ai
-
-# Check ALB controller logs
-kubectl logs -n kube-system deployment/aws-load-balancer-controller
-```
-
-**Common causes:**
-- ALB controller not installed
-- Incorrect subnet tags
-- Security group issues
-
-#### 4. Agent backend crashes
-
-```bash
-# Check logs for errors
-kubectl logs deployment/agent-backend -n nvidia-retail-ai --tail=100
-
-# Common issues:
-# - Missing environment variables
-# - Cannot connect to Qdrant
-# - Invalid API keys
-```
-
-### Rolling Back
-
-```bash
-# Check deployment history
-kubectl rollout history deployment/agent-backend -n nvidia-retail-ai
-
-# Rollback to previous version
-kubectl rollout undo deployment/agent-backend -n nvidia-retail-ai
-```
-
-## Data Management
-
-### Backup Qdrant Data
-
-```bash
-# Create snapshot (exec into pod)
-kubectl exec -it deployment/qdrant -n nvidia-retail-ai -- \
-  curl -X POST 'http://localhost:6333/collections/image_embeddings/snapshots'
-
-# Download snapshot
-kubectl cp nvidia-retail-ai/qdrant-pod:/qdrant/storage/snapshots ./backups/
-```
-
-### Restore Qdrant Data
-
-```bash
-# Upload snapshot to new cluster
-kubectl cp ./backups/snapshot.tar.gz nvidia-retail-ai/qdrant-pod:/qdrant/storage/snapshots/
-
-# Restore via API
-kubectl exec -it deployment/qdrant -n nvidia-retail-ai -- \
-  curl -X PUT 'http://localhost:6333/collections/image_embeddings/snapshots/upload' \
-  --data-binary @/qdrant/storage/snapshots/snapshot.tar.gz
-```
-
-## Updating the Application
+## 🔄 Updating the Deployment
 
 ### Update Docker Images
 
 ```bash
-# Build new images
-cd ../nvdia-ag-ui
-docker build -t ${ECR_REGISTRY}/nvidia-retail-ai/ui-frontend:v2 .
+# Build and push new images
+cd k8s/scripts
+./02-build-and-push.sh
 
-cd agent
-docker build -t ${ECR_REGISTRY}/nvidia-retail-ai/agent-backend:v2 .
-
-# Push to ECR
-docker push ${ECR_REGISTRY}/nvidia-retail-ai/ui-frontend:v2
-docker push ${ECR_REGISTRY}/nvidia-retail-ai/agent-backend:v2
-
-# Update deployment
-kubectl set image deployment/ui-frontend \
-  ui-frontend=${ECR_REGISTRY}/nvidia-retail-ai/ui-frontend:v2 \
-  -n nvidia-retail-ai
-
-kubectl set image deployment/agent-backend \
-  agent-backend=${ECR_REGISTRY}/nvidia-retail-ai/agent-backend:v2 \
-  -n nvidia-retail-ai
+# Restart deployments to use new images
+kubectl rollout restart deployment agent -n nvidia-retail-ai
+kubectl rollout restart deployment frontend -n nvidia-retail-ai
 ```
 
 ### Update Configuration
 
 ```bash
 # Edit ConfigMap
-kubectl edit configmap app-config -n nvidia-retail-ai
+kubectl edit configmap nvidia-retail-config -n nvidia-retail-ai
 
 # Restart pods to pick up changes
-kubectl rollout restart deployment/agent-backend -n nvidia-retail-ai
+kubectl rollout restart deployment agent -n nvidia-retail-ai
+kubectl rollout restart deployment frontend -n nvidia-retail-ai
 ```
 
-## Cost Optimization
-
-### Estimated Monthly Costs (us-east-1)
-
-- **EKS Cluster**: $73/month (control plane)
-- **EC2 Nodes**: ~$220/month (3x t3.xlarge)
-- **EBS Storage**: ~$2/month (20GB gp3)
-- **Load Balancer**: ~$20/month
-- **Data Transfer**: Variable
-
-**Total**: ~$315/month (excluding data transfer and NVIDIA API costs)
-
-### Cost Reduction Tips
-
-1. **Use Spot Instances** for non-critical workloads
-2. **Enable Cluster Autoscaler** to scale down during off-hours
-3. **Use Fargate** for agent backend (pay per pod)
-4. **Optimize image sizes** to reduce pull time and storage
-
-## Security Best Practices
-
-1. **Use AWS Secrets Manager** instead of Kubernetes secrets
-2. **Enable Pod Security Standards**
-3. **Use Network Policies** to restrict pod communication
-4. **Enable audit logging** on EKS
-5. **Regularly update** container images
-6. **Use IRSA** instead of storing AWS credentials
-7. **Enable encryption** for EBS volumes
-8. **Use private subnets** for nodes
-
-## Cleanup
-
-### Delete Application
+### Update Secrets
 
 ```bash
-kubectl delete namespace nvidia-retail-ai
+# Update secrets
+kubectl delete secret nvidia-retail-secrets -n nvidia-retail-ai
+kubectl create secret generic nvidia-retail-secrets \
+  --from-literal=NVIDIA_API_KEY=new-key \
+  --from-literal=GOOGLE_API_KEY=new-key \
+  -n nvidia-retail-ai
+
+# Restart pods
+kubectl rollout restart deployment agent -n nvidia-retail-ai
 ```
 
-### Delete EKS Cluster
+## 🧹 Cleanup
+
+To remove all deployed resources:
 
 ```bash
-eksctl delete cluster --name nvidia-retail-ai-cluster --region us-east-1
+cd k8s/scripts
+./99-cleanup.sh
 ```
 
-### Delete ECR Repositories
+**WARNING:** This will delete all resources including persistent volumes and data!
 
-```bash
-aws ecr delete-repository \
-  --repository-name nvidia-retail-ai/ui-frontend \
-  --region us-east-1 \
-  --force
+## 📝 Configuration Details
 
-aws ecr delete-repository \
-  --repository-name nvidia-retail-ai/agent-backend \
-  --region us-east-1 \
-  --force
-```
+### Resource Limits
 
-## Support and Resources
+| Service  | CPU Request | CPU Limit | Memory Request | Memory Limit |
+|----------|-------------|-----------|----------------|--------------|
+| Frontend | 100m        | 250m      | 256Mi          | 512Mi        |
+| Agent    | 250m        | 500m      | 512Mi          | 1Gi          |
+| Qdrant   | 500m        | 1000m     | 1Gi            | 2Gi          |
 
-- **EKS Documentation**: https://docs.aws.amazon.com/eks/
-- **kubectl Cheat Sheet**: https://kubernetes.io/docs/reference/kubectl/cheatsheet/
-- **NVIDIA NIM**: https://build.nvidia.com/
-- **Qdrant Documentation**: https://qdrant.tech/documentation/
+### Storage
 
-## Next Steps
+| PVC          | Size | Storage Class |
+|--------------|------|---------------|
+| qdrant-storage | 10Gi | gp2           |
+| agent-data   | 5Gi  | gp2           |
 
-1. **Set up monitoring** with CloudWatch Container Insights
-2. **Configure CI/CD** with GitHub Actions or AWS CodePipeline
-3. **Add SSL/TLS** certificate from ACM
-4. **Set up custom domain** with Route 53
-5. **Implement backup strategy** for Qdrant data
-6. **Configure auto-scaling** based on metrics
-7. **Set up alerts** for critical failures
+### Replicas
 
----
+- **Frontend**: 2 replicas (for high availability)
+- **Agent**: 2 replicas (for load balancing)
+- **Qdrant**: 1 replica (stateful)
 
-**Questions or Issues?**
-Refer to the troubleshooting section or check pod logs for detailed error messages.
+## 🔐 Security Best Practices
+
+1. **Never commit secrets to Git** - Use AWS Secrets Manager or Kubernetes Secrets
+2. **Use RBAC** - Limit access to the namespace
+3. **Enable network policies** - Restrict pod-to-pod communication
+4. **Use HTTPS** - Configure TLS certificates for the LoadBalancer
+5. **Regular updates** - Keep Docker images and dependencies updated
+
+## 📚 Additional Resources
+
+- [EKS User Guide](https://docs.aws.amazon.com/eks/latest/userguide/)
+- [Kubernetes Documentation](https://kubernetes.io/docs/)
+- [AWS Load Balancer Controller](https://docs.aws.amazon.com/eks/latest/userguide/aws-load-balancer-controller.html)
+- [Qdrant Documentation](https://qdrant.tech/documentation/)
+
+## 🆘 Support
+
+For issues or questions:
+1. Check the troubleshooting section above
+2. Review pod logs using `kubectl logs`
+3. Check AWS EKS console for cluster-level issues
+4. Review application-specific logs in CloudWatch (if configured)
+
+## 🎯 Next Steps
+
+After deployment:
+1. Set up monitoring with CloudWatch or Prometheus
+2. Configure autoscaling for frontend and agent
+3. Set up CI/CD pipeline for automated deployments
+4. Configure backup strategy for Qdrant data
+5. Set up custom domain and SSL certificate

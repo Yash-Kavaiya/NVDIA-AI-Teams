@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nvidia-retail-config
+  namespace: nvidia-retail-ai
+data:
+  # Qdrant Configuration
+  QDRANT_URL: "http://qdrant:6333"
+  
+  # NVIDIA API Configuration
+  NVIDIA_EMBEDDING_URL: "https://integrate.api.nvidia.com/v1/embeddings"
+  NVIDIA_RERANKER_URL: "https://integrate.api.nvidia.com/v1/ranking"
+  
+  # Image Embeddings Configuration
+  COLLECTION_NAME: "image_embeddings"
+  EMBEDDING_DIM: "4096"
+  
+  # Agent Configuration
+  PORT: "8000"
+  
+  # Next.js Configuration
+  NODE_ENV: "production"
+  NEXT_TELEMETRY_DISABLED: "1"
+  NEXT_PUBLIC_API_URL: "http://agent-service:8000"
