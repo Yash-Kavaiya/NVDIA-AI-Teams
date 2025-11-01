@@ -1,21 +1,18 @@
 "use client";
 
-import { useCoAgent, useCopilotAction } from "@copilotkit/react-core";
+import { useCopilotAction } from "@copilotkit/react-core";
 import { useState } from "react";
 import { ChatInterface } from "@/components/ChatInterface";
 import { Sidebar } from "@/components/Sidebar";
 
 export default function CopilotKitPage() {
   const [showSidebar, setShowSidebar] = useState(true);
-
-  // 🪁 Shared State: https://docs.copilotkit.ai/coagents/shared-state
-  const { state, setState } = useCoAgent<AgentState>({
-    name: "my_agent",
-    initialState: {
-      documents: [],
-      images: [],
-      queries: [],
-    },
+  
+  // Local state management (not using useCoAgent due to ADK middleware compatibility)
+  const [agentState, setAgentState] = useState<AgentState>({
+    documents: [],
+    images: [],
+    queries: [],
   });
 
   // 🪁 Frontend Actions for Retail AI
@@ -25,13 +22,19 @@ export default function CopilotKitPage() {
     parameters: [
       {
         name: "query",
+        type: "string",
         description: "The search query for documents",
         required: true,
       },
     ],
-    handler({ query }) {
+    handler: async ({ query }) => {
       console.log("Searching documents:", query);
+      setAgentState(prev => ({
+        ...prev,
+        queries: [...prev.queries, query],
+      }));
       // Integration with document pipeline will go here
+      return { status: "success", query };
     },
   });
 
@@ -41,13 +44,19 @@ export default function CopilotKitPage() {
     parameters: [
       {
         name: "query",
+        type: "string",
         description: "The search query for images",
         required: true,
       },
     ],
-    handler({ query }) {
+    handler: async ({ query }) => {
       console.log("Searching images:", query);
+      setAgentState(prev => ({
+        ...prev,
+        queries: [...prev.queries, query],
+      }));
       // Integration with image pipeline will go here
+      return { status: "success", query };
     },
   });
 
@@ -57,19 +66,25 @@ export default function CopilotKitPage() {
     parameters: [
       {
         name: "category",
+        type: "string",
         description: "Product category to analyze",
         required: true,
       },
     ],
-    handler({ category }) {
+    handler: async ({ category }) => {
       console.log("Analyzing inventory:", category);
+      setAgentState(prev => ({
+        ...prev,
+        queries: [...prev.queries, `inventory:${category}`],
+      }));
       // Integration with retrieval pipeline will go here
+      return { status: "success", category };
     },
   });
 
   const handleNewChat = () => {
     // Reset chat state
-    setState({
+    setAgentState({
       documents: [],
       images: [],
       queries: [],

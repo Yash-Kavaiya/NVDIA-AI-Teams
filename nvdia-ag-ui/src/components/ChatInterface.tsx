@@ -55,10 +55,11 @@ const quickSuggestions: Suggestion[] = [
 export function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const threadIdRef = useRef<string>(`thread-${Date.now()}`);
 
   // Initialize messages on client side only to avoid hydration mismatch
   useEffect(() => {
@@ -89,34 +90,150 @@ export function ChatInterface() {
   }, [input]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || isLoading) return;
 
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: `user-${Date.now()}`,
       role: "user",
       content: input,
       timestamp: new Date(),
     };
 
+    // Add user message to UI immediately
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
-    setIsTyping(true);
+    setIsLoading(true);
 
-    // Simulate AI response (replace with actual CopilotKit integration)
-    setTimeout(() => {
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "I'm processing your request using **NVIDIA AI embeddings** and our **vector database**. Let me retrieve the most relevant information for you...",
-        timestamp: new Date(),
-        metadata: {
-          confidence: 0.95,
-          sources: ["Document Pipeline", "Image Search", "Qdrant DB"],
+    try {
+      // Call the backend directly, bypassing CopilotKit runtime
+      const response = await fetch('https://probable-space-trout-6xxpr69xvg5crjww-8000.app.github.dev/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({
+          threadId: threadIdRef.current,
+          runId: `run-${Date.now()}`,
+          state: {},
+          messages: [
+            {
+              id: userMessage.id,
+              role: "user",
+              content: userMessage.content,
+            }
+          ],
+          tools: [],
+          context: [],
+          forwardedProps: {},
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Read the streaming response from ADK
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let assistantMessageId = '';
+      let assistantContent = "";
+      let messageCreated = false;
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          const lines = chunk.split('\n').filter(line => line.trim());
+
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                
+                // Handle ADK event types
+                switch (data.type) {
+                  case 'TEXT_MESSAGE_START':
+                    // Create assistant message when streaming starts
+                    assistantMessageId = data.messageId;
+                    if (!messageCreated) {
+                      const assistantMessage: Message = {
+                        id: assistantMessageId,
+                        role: "assistant",
+                        content: "",
+                        timestamp: new Date(),
+                      };
+                      setMessages((prev) => [...prev, assistantMessage]);
+                      messageCreated = true;
+                    }
+                    break;
+
+                  case 'TEXT_MESSAGE_CONTENT':
+                    // Append content delta
+                    if (data.delta) {
+                      assistantContent += data.delta;
+                      setMessages((prev) => 
+                        prev.map((msg) =>
+                          msg.id === assistantMessageId
+                            ? { ...msg, content: assistantContent }
+                            : msg
+                        )
+                      );
+                    }
+                    break;
+
+                  case 'TEXT_MESSAGE_END':
+                    // Message complete
+                    console.log('Message completed:', assistantContent);
+                    break;
+
+                  case 'RUN_STARTED':
+                  case 'RUN_FINISHED':
+                  case 'STATE_DELTA':
+                  case 'STATE_SNAPSHOT':
+                    // Log these events but don't show in UI
+                    console.debug('ADK Event:', data.type);
+                    break;
+
+                  default:
+                    console.debug('Unknown event type:', data.type);
+                }
+              } catch (e) {
+                // Ignore parse errors for non-JSON lines
+                console.debug('Parse error:', e);
+              }
+            }
+          }
+        }
+      }
+
+      // If we didn't get any content, show an error
+      if (!assistantContent) {
+        const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          role: "assistant",
+          content: "I received your message but couldn't generate a response. Please try again.",
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+      }
+
+    } catch (error) {
+      console.error('Error sending message:', error);
+      
+      // Add detailed error message to chat
+      const errorDetails = error instanceof Error ? error.message : String(error);
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        role: "assistant",
+        content: `Sorry, I encountered an error: ${errorDetails}\n\nPlease make sure:\n• Backend is running on port 8000\n• You have a GOOGLE_API_KEY set\n• Check the browser console for details`,
+        timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 1000);
+      setMessages((prev) => [...prev, errorMessage]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -297,7 +414,7 @@ export function ChatInterface() {
           )}
 
           {/* Typing Indicator */}
-          {isTyping && (
+          {isLoading && (
             <div className="flex justify-start mt-4">
               <div className="max-w-3xl bg-nvidia-darker border border-nvidia-border rounded-2xl px-6 py-4">
                 <div className="flex items-center gap-2">

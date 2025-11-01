@@ -8,6 +8,7 @@ import json
 from enum import Enum
 from typing import Dict, List, Any, Optional
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from ag_ui_adk import ADKAgent, add_adk_fastapi_endpoint
 
 # ADK imports
@@ -194,6 +195,15 @@ adk_proverbs_agent = ADKAgent(
 
 # Create FastAPI app
 app = FastAPI(title="ADK Middleware Proverbs Agent")
+
+# Add CORS middleware to allow browser requests
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Add the ADK endpoint
 add_adk_fastapi_endpoint(app, adk_proverbs_agent, path="/")

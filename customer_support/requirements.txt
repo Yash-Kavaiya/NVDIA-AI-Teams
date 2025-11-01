@@ -1,10 +1,8 @@
 # Core dependencies
-python-dotenv==1.0.0
+python-dotenv
 
 # Document processing
-docling==2.15.2
-docling-core==2.7.2
-docling-parse==2.7.3
+docling>=2.58.0
 
 # NVIDIA embeddings (OpenAI-compatible client)
 openai==1.58.1

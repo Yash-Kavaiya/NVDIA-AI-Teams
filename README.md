@@ -14,6 +14,7 @@ Multi-modal AI system combining document processing, image embeddings, and conve
 
 ```bash
 docker run -d -p 6333:6333 -p 6334:6334 -v qdrant_storage:/qdrant/storage --name qdrant qdrant/qdrant
+
 ```
 
 ### 2. Document Processing Pipeline (NEW!)
@@ -26,8 +27,6 @@ pip install -r requirements.txt
 python main.py process ../Data
 python main.py search "retail compliance requirements"
 ```
-
-See [Customer_support/Code/document_pipeline/QUICKSTART.md](Customer_support/Code/document_pipeline/QUICKSTART.md) for detailed guide.
 
 ### 3. Image Embeddings Pipeline
 
@@ -47,44 +46,6 @@ Interactive AI agent with CopilotKit:
 cd nvdia-ag-ui
 npm install
 npm run dev
-```
-
-## 📁 Project Structure
-
-```
-NVDIA-AI-Teams/
-├── Customer_support/
-│   ├── Code/
-│   │   └── document_pipeline/  # NEW: PDF processing with Docling + NVIDIA embeddings
-│   │       ├── main.py         # Process & search documents
-│   │       ├── config.py       # Configuration management
-│   │       ├── interfaces.py   # SOLID principle abstractions
-│   │       ├── extractor.py    # Docling PDF extraction
-│   │       ├── chunker.py      # Text chunking with overlap
-│   │       ├── embedding_generator.py # NVIDIA embeddings
-│   │       ├── vector_db.py    # Qdrant operations
-│   │       ├── reranker.py     # NVIDIA reranking
-│   │       └── retrieval_pipeline.py  # Search orchestration
-│   └── Data/                   # PDF documents for processing
-│       ├── RegulatedProductsHandbook.pdf
-│       ├── Retail Program Standards Policy Statement July 2028.pdf
-│       └── ...
-│
-├── image_embeddings_pipeline/ # Image processing pipeline
-│   ├── main.py                # Entry point
-│   ├── src/
-│   │   ├── embedding_generator.py
-│   │   ├── image_processor.py
-│   │   ├── pipeline.py
-│   │   └── qdrant_manager.py
-│   └── config/config.py
-│
-├── nvdia-ag-ui/               # Next.js + CopilotKit UI
-│   ├── agent/agent.py         # Python agent backend
-│   └── src/app/               # Next.js frontend
-│
-└── .github/
-    └── copilot-instructions.md # AI agent development guide
 ```
 
 ## 🎯 Key Features
@@ -135,11 +96,6 @@ NVDIA-AI-Teams/
 - **Model**: `nvidia/llama-3.2-nv-rerankqa-1b-v2`
 - **Purpose**: Refine top-k results for better precision
 - **Usage**: After vector search
-
-### OCR (Optional)
-- **Model**: `nvidia/nemoretriever-ocr-v1`
-- **Purpose**: Extract text from scanned PDFs
-- **Limit**: 180KB base64 per image
 
 ## 🚀 Usage Examples
 
