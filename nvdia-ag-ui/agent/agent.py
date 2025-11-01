@@ -23,11 +23,11 @@ from google.adk.models import LlmResponse, LlmRequest
 from google.genai import types
 
 
-from .product_search_agent.agent import root_agent as product_search_agent
-from .review_text_analysis_agent.agent import root_agent as review_text_analysis_agent
-from .inventory_agent.agent import root_agent as inventory_agent
-from .shopping_agent.agent import root_agent as shopping_agent
-from .customer_support_agent.agent import root_agent as customer_support_agent
+from product_search_agent.agent import root_agent as product_search_agent
+from review_text_analysis_agent.agent import root_agent as review_text_analysis_agent
+from inventory_agent.agent import root_agent as inventory_agent
+# from shopping_agent.agent import root_agent as shopping_agent  # Not implemented yet
+# from customer_support_agent.agent import root_agent as customer_support_agent  # Requires external customer_support module
 
 
 from pydantic import BaseModel, Field
@@ -192,8 +192,8 @@ retail_coordinator = LlmAgent(
     Always prioritize customer satisfaction, provide clear and helpful responses, 
     and ensure a seamless experience across all retail operations.
         """,
-        sub_agents=[product_search_agent,review_text_analysis_agent,inventory_agent,
-        customer_support_agent],
+        sub_agents=[product_search_agent,review_text_analysis_agent,inventory_agent],
+        # customer_support_agent temporarily disabled due to external dependencies
         before_agent_callback=on_before_agent,
         before_model_callback=before_model_modifier,
         after_model_callback = simple_after_model_modifier
