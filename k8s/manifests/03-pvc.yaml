@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: qdrant-storage
+  namespace: nvidia-retail-ai
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp2  # AWS EBS gp2 storage class
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: agent-data
+  namespace: nvidia-retail-ai
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: gp2
+  resources:
+    requests:
+      storage: 5Gi

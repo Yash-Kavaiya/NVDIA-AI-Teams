@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agent
+  namespace: nvidia-retail-ai
+  labels:
+    app: agent
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: agent
+  template:
+    metadata:
+      labels:
+        app: agent
+    spec:
+      containers:
+      - name: agent
+        image: 661642944881.dkr.ecr.us-east-1.amazonaws.com/nvidia-retail-agent:latest
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: nvidia-retail-config
+              key: PORT
+        - name: QDRANT_URL
+          valueFrom:
+            configMapKeyRef:
+              name: nvidia-retail-config
+              key: QDRANT_URL
+        - name: NVIDIA_EMBEDDING_URL
+          valueFrom:
+            configMapKeyRef:
+              name: nvidia-retail-config
+              key: NVIDIA_EMBEDDING_URL
+        - name: NVIDIA_RERANKER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: nvidia-retail-config
+              key: NVIDIA_RERANKER_URL
+        - name: COLLECTION_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: nvidia-retail-config
+              key: COLLECTION_NAME
+        - name: EMBEDDING_DIM
+          valueFrom:
+            configMapKeyRef:
+              name: nvidia-retail-config
+              key: EMBEDDING_DIM
+        - name: NVIDIA_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nvidia-retail-secrets
+              key: NVIDIA_API_KEY
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: nvidia-retail-secrets
+              key: GOOGLE_API_KEY
+        volumeMounts:
+        - name: agent-data
+          mountPath: /app/inventory_data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 15
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: agent-data
+        persistentVolumeClaim:
+          claimName: agent-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: agent-service
+  namespace: nvidia-retail-ai
+  labels:
+    app: agent
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: http
+  selector:
+    app: agent
