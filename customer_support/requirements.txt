@@ -1,0 +1,17 @@
+# Core dependencies
+python-dotenv==1.0.0
+
+# Document processing
+docling==2.15.2
+docling-core==2.7.2
+docling-parse==2.7.3
+
+# NVIDIA embeddings (OpenAI-compatible client)
+openai==1.58.1
+
+# Vector database
+qdrant-client==1.12.1
+
+# Utilities
+aiohttp==3.11.11
+requests==2.32.3
