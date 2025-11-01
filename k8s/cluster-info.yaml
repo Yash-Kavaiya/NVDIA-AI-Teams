@@ -1,0 +1,32 @@
+# EKS Cluster Information
+# This file contains the specific details of your EKS cluster
+
+apiVersion: v1
+kind: Config
+clusters:
+- cluster:
+    certificate-authority-data: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURCVENDQWUyZ0F3SUJBZ0lJRXB6L2NJZjVRSjR3RFFZSktvWklodmNOQVFFTEJRQXdGVEVUTUJFR0ExVUUKQXhNS2EzVmlaWEp1WlhSbGN6QWVGdzB5TlRFeE1ERXhOekF5TXpOYUZ3MHpOVEV3TXpBeE56QTNNek5hTUJVeApFekFSQmdOVkJBTVRDbXQxWW1WeWJtVjBaWE13Z2dFaU1BMEdDU3FHU0liM0RRRUJBUVVBQTRJQkR3QXdnZ0VLCkFvSUJBUUNmaGx1bWcwT0J2NkI5dXhGZHdQc2NVclNjK2FVRk45dHdFRnNJdjVObTV6VysyZUF2aFFPZEVsQlUKZGRSdnY1aEJLWkU0c3h4Tk90VlpUbzF4VkhTL2xPWHQvaXp3YVIrTWRzb1hicDJqZTJDNy9uYzV1Rk53YktZcwpjWEhwUmdzVzhyWWFqK3NKallYeFJCNWk2a28vdDBDQzZtaGxwQzE0RVFvTWlTRDIzdS9oQVlSVWNzSElOL1dHCmQvNXZQMFVMaGtFL0gzaEttRGprVHJGSmsxakNkTEZsclFUVFgyK0IxbFVjVFF1T2xpZnVoYkd0dmZ3emxVYzEKY09qdzJTYlkwUCtsWHJwYklLeFkzUEs4YUcxK3Rhc3BQaFR3eHJUbk5wUmR3cHY4RVRzajh1VEc3Y3Y0T3BXTApjQ0RUZXpucjNmaEdBNjZwQzlhcmU5QnI4Uk1kQWdNQkFBR2pXVEJYTUE0R0ExVWREd0VCL3dRRUF3SUNwREFQCkJnTlZIUk1CQWY4RUJUQURBUUgvTUIwR0ExVWREZ1FXQkJRb243S0NacjB4WEh1YlR4N1dRQ3E2WmlsZmNqQVYKQmdOVkhSRUVEakFNZ2dwcmRXSmxjbTVsZEdWek1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQkk2c2V6TGlucwp4enlWTFhiOFZFTXd2U0ltZzFRcjB4OTh2OG5CMGZ3RWlBcTJkMDhBQW9DV2FVbHJienlHc1o4SHNnbzhBT25GCmpjYkMzSnlpKzZwcFcvNUVWNGFlZ0hQUDVnc3V3dWFSb1I0cE4xemRoMjVGR1JLNmIydjJXQ1NkM2hDSDRtT0kKc2ZDUENHamRSUExsSDAwQktoUWJCdE55MkFEcjBSSFduNlhDcXlqaVU2MDhWM2pMczBYend1VVFLSzRkeEJRZgo2cUpReFp0c1B2aDFwNVZvREovVGVrUmlCRXJUK0k5L0FxN1RzRkwzbkJ5UnZudkRHbDBiNm1BaDMzM1YvWkhFCjhzdzVNYUIyOGxtTzgvWklLM0E5dm94eTh4UHB5TFJ3VVB0MGlGdEJlbSttS1h5dFNBeGdBeENuVU1BUDFFTSsKYTllVWlveXhSeDRXCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+    server: https://10CC7E71CBCA51BED4FCA00D0AA8F52B.gr7.us-east-1.eks.amazonaws.com
+  name: fabulous-alternative-potato
+
+contexts:
+- context:
+    cluster: fabulous-alternative-potato
+    user: fabulous-alternative-potato
+  name: fabulous-alternative-potato
+
+current-context: fabulous-alternative-potato
+
+users:
+- name: fabulous-alternative-potato
+  user:
+    exec:
+      apiVersion: client.authentication.k8s.io/v1beta1
+      command: aws
+      args:
+        - eks
+        - get-token
+        - --cluster-name
+        - fabulous-alternative-potato
+        - --region
+        - us-east-1
