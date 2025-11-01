@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nvidia-retail-ai
+  labels:
+    name: nvidia-retail-ai
+    environment: production

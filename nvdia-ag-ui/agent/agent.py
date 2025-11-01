@@ -220,6 +220,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Add health check endpoint for Kubernetes
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for Kubernetes liveness and readiness probes"""
+    return {
+        "status": "healthy",
+        "service": "nvidia-retail-ai-agent-backend",
+        "timestamp": __import__('datetime').datetime.now().isoformat()
+    }
+
 # Add the ADK endpoint
 add_adk_fastapi_endpoint(app, adk_retail_coordinator, path="/")
 
